@@ -1,26 +1,10 @@
-terraform {
-  required_version = ">= 1.5.0"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = ">= 3.75.0"
-    }
-  }
-}
-
 resource "azurerm_public_ip" "bastion_pip" {
   name                = "${var.name}-pip"
   location            = var.location
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
   sku                 = "Standard"
-
-  tags = merge(
-    {
-      IaC_Managed = "Terraform"
-    },
-    var.tags
-  )
+  tags                = var.tags
 }
 
 resource "azurerm_bastion_host" "bastion" {
@@ -37,10 +21,5 @@ resource "azurerm_bastion_host" "bastion" {
     public_ip_address_id = azurerm_public_ip.bastion_pip.id
   }
 
-  tags = merge(
-    {
-      IaC_Managed = "Terraform"
-    },
-    var.tags
-  )
+  tags = var.tags
 }

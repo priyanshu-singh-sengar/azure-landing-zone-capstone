@@ -10,25 +10,17 @@ In Azure, a Resource Group is the lifecycle and administrative boundary for all 
 
 ## 2. Key Design Decisions
 
-### Automated Tag Injection & Lifecycle Guard
+### Minimal & Idiomatic Resource Declaration
 ```hcl
-tags = merge(
-  {
-    IaC_Managed = "Terraform"
-    CreatedAt   = formatdate("YYYY-MM-DD", timestamp())
-  },
-  var.tags
-)
-
-lifecycle {
-  ignore_changes = [
-    tags["CreatedAt"]
-  ]
+resource "azurerm_resource_group" "rg" {
+  name     = var.name
+  location = var.location
+  tags     = var.tags
 }
 ```
 
-1. **`IaC_Managed = "Terraform"`**: Automatically stamped on every resource group to track IaC ownership.
-2. **`CreatedAt` with `ignore_changes`**: Captures the initial date of provisioning. Without `ignore_changes = [tags["CreatedAt"]]`, every subsequent `terraform apply` would detect `timestamp()` changing and attempt to update tags unnecessarily.
+1. **Zero Boilerplate:** Avoids artificial lifecycle hacks and volatile timestamps (`timestamp()`), ensuring predictable plans and fast execution.
+2. **Direct Tag Passthrough:** Inherits caller-provided tags directly without redundant merging.
 
 ---
 

@@ -1,13 +1,3 @@
-terraform {
-  required_version = ">= 1.5.0"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = ">= 3.75.0"
-    }
-  }
-}
-
 # 1. Top-level ALZ Root Management Group under Tenant Root
 resource "azurerm_management_group" "alz_root" {
   name                       = var.alz_root_id
