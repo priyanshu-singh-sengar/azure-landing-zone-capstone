@@ -117,6 +117,45 @@ module "bastion_nsg" {
   tags = var.tags
 }
 
+# 2b. Shared Services Subnet NSG (Remediation for Checkov CKV_AZURE_160 / Copilot-generated)
+# Copilot prompt: "Generate an NSG module configuration for shared services subnet to block Internet inbound and allow VirtualNetwork"
+module "shared_svc_nsg" {
+  source = "../../modules/nsg"
+
+  name                = "nsg-hub-shared-svc"
+  location            = var.location
+  resource_group_name = module.hub_rg.name
+
+  security_rules = [
+    {
+      name                       = "AllowVNetInbound"
+      priority                   = 200
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "VirtualNetwork"
+      destination_address_prefix = "VirtualNetwork"
+      description                = "Allow internal traffic within Virtual Network"
+    },
+    {
+      name                       = "DenyInternetInbound"
+      priority                   = 4096
+      direction                  = "Inbound"
+      access                     = "Deny"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "Internet"
+      destination_address_prefix = "*"
+      description                = "Explicitly block all direct inbound Internet traffic"
+    }
+  ]
+
+  tags = var.tags
+}
+
 # 3. Hub Virtual Network with Dedicated Subnets
 module "hub_vnet" {
   source = "../../modules/vnet"
@@ -146,6 +185,7 @@ module "hub_vnet" {
 
   subnet_nsg_ids = {
     AzureBastionSubnet = module.bastion_nsg.id
+    snet-shared-svc    = module.shared_svc_nsg.id
   }
 
   tags = var.tags
