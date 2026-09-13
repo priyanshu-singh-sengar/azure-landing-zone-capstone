@@ -7,15 +7,13 @@ terraform {
     }
   }
 
-  # Default local backend for offline verification and sandboxed testing.
-  # For production, uncomment and configure the Azure Blob Storage backend below:
-  # backend "azurerm" {
-  #   resource_group_name  = "rg-terraform-state-mgmt"
-  #   storage_account_name = "sttfstatemgmt001"
-  #   container_name       = "tfstate"
-  #   key                  = "governance.tfstate"
-  #   use_azuread_auth     = true
-  # }
+  backend "azurerm" {
+    resource_group_name  = "rg-terraform-state"
+    storage_account_name = "sttfstatew4gika"
+    container_name       = "tfstate"
+    key                  = "governance.tfstate"
+    use_azuread_auth     = true
+  }
 }
 
 provider "azurerm" {
