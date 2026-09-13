@@ -4,8 +4,8 @@
 
 | Version | Supported |
 | ------- | --------- |
-| main branch | ✅ Yes |
-| All other branches | ❌ No — report against main |
+| main branch | Yes |
+| All other branches | No (report against main) |
 
 ## Reporting a Vulnerability
 

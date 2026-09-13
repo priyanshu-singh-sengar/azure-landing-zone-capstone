@@ -1,14 +1,14 @@
 # Azure Landing Zone — Hub-Spoke Infrastructure Capstone Project
 
-This repository contains the Infrastructure as Code (IaC) implementation for an **Enterprise Azure Landing Zone** based on a **Hub-and-Spoke Topology**.
+This repository contains the Infrastructure as Code (IaC) implementation for an Enterprise Azure Landing Zone based on a Hub-and-Spoke Topology.
 
-## 📑 Documentation & Reference Files
-- 👉 **[ARCHITECTURE_DESIGN_AND_REPO_STRUCTURE.md](./ARCHITECTURE_DESIGN_AND_REPO_STRUCTURE.md)**: Target Architecture & Repo Design (Instructor Review Submission)
-- 📖 **[EXPLANATION.md](./EXPLANATION.md)**: Deep-dive explanation on the **When, Where, and Why** of every single architectural component and design decision.
+## Documentation & Reference Files
+- [ARCHITECTURE_DESIGN_AND_REPO_STRUCTURE.md](./ARCHITECTURE_DESIGN_AND_REPO_STRUCTURE.md): Target Architecture & Repo Design
+- [EXPLANATION.md](./EXPLANATION.md): Deep-dive explanation on the design decisions and component rationales.
 
 ---
 
-## 🏛️ Architecture Highlights
+## Architecture Highlights
 - **Governance**: Hierarchical Management Group structure with Azure Policy guardrails (Allowed Regions, Mandatory Tags, Allowed Resource Types).
 - **Hub Network (`10.0.0.0/16`)**:
   - Central **Azure Firewall** (`10.0.3.0/24`) for filtered egress and traffic inspection.
@@ -22,14 +22,14 @@ This repository contains the Infrastructure as Code (IaC) implementation for an 
 
 ---
 
-## 📂 Repository Quick View
+## Repository Structure
 ```text
 landingZone/
 ├── ARCHITECTURE_DESIGN_AND_REPO_STRUCTURE.md # Detailed Architecture & Design Proposal
 ├── README.md                                 # Overview & Quickstart
 ├── EXPLANATION.md                            # Comprehensive Component Deep-Dive & Justifications
 ├── .gitignore                                # Git ignore rules for Terraform & secrets
-├── bootstrap/                                # (Optional) AzureRM Remote State Storage Setup
+├── bootstrap/                                # AzureRM Remote State Storage Setup
 ├── modules/                                  # Reusable Terraform child modules
 │   ├── management_groups/
 │   ├── policy_assignment/
@@ -49,7 +49,7 @@ landingZone/
 
 ---
 
-## 🚀 Quickstart & Deployment Guide
+## Quickstart & Deployment Guide
 
 ### Prerequisites
 - [Terraform](https://www.terraform.io/) `>= 1.5.0`
@@ -101,7 +101,7 @@ terraform apply -var-file="environments/prod.tfvars"
 
 ---
 
-## 🤖 CI/CD Automation (GitHub Actions)
+## CI/CD Automation (GitHub Actions)
 
 Pre-configured workflows in `.github/workflows/`:
 - **`terraform-ci.yml`**: End-to-end CI/CD pipeline:
@@ -121,5 +121,3 @@ Federated credentials must be granted to:
 - `repo:<org-or-user>/<repo>:ref:refs/heads/main`
 - `repo:<org-or-user>/<repo>:pull_request`
 - `repo:<org-or-user>/<repo>:environment:production`
-
-

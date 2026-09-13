@@ -117,8 +117,8 @@ module "bastion_nsg" {
   tags = var.tags
 }
 
-# 2b. Shared Services Subnet NSG (Remediation for Checkov CKV_AZURE_160 / Copilot-generated)
-# Copilot prompt: "Generate an NSG module configuration for shared services subnet to block Internet inbound and allow VirtualNetwork"
+# 2b. Shared Services Subnet NSG
+# Network security group for shared services subnet to allow VNet internal traffic and block direct internet ingress.
 module "shared_svc_nsg" {
   source = "../../modules/nsg"
 
