@@ -1,0 +1,166 @@
+name: "Terraform CI/CD"
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  validate:
+    name: "Lint & Validate Terraform"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Validate Governance Layer
+        run: |
+          cd layers/00-governance
+          terraform init -backend=false
+          terraform validate
+
+      - name: Validate Connectivity Hub Layer
+        run: |
+          cd layers/01-connectivity-hub
+          terraform init -backend=false
+          terraform validate
+
+      - name: Validate Spokes Layer
+        run: |
+          cd layers/02-spokes
+          terraform init -backend=false
+          terraform validate
+
+      - name: Run tfsec IaC Security Scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          soft_fail: true
+
+      - name: Run Checkov IaC Security Scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+
+  plan:
+    name: "Terraform Plan (Hub Layer)"
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'pull_request'
+
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Terraform Init (Hub)
+        working-directory: layers/01-connectivity-hub
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: terraform init
+
+      - name: Terraform Plan (Hub)
+        working-directory: layers/01-connectivity-hub
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: terraform plan -var-file="environments/hub.tfvars" -no-color 2>&1 | tee plan-output.txt
+
+      - name: Post Plan as PR Comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('layers/01-connectivity-hub/plan-output.txt', 'utf8');
+            const truncated = plan.length > 60000 ? plan.substring(0, 60000) + '\n\n... (truncated)' : plan;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Terraform Plan — Hub Layer\n\`\`\`\n${truncated}\n\`\`\``
+            });
+
+  apply:
+    name: "Terraform Apply (Gated via Environment)"
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    environment: production
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Terraform Init (Hub)
+        working-directory: layers/01-connectivity-hub
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: terraform init
+
+      - name: Terraform Apply (Hub)
+        working-directory: layers/01-connectivity-hub
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: terraform apply -auto-approve -var-file="environments/hub.tfvars"

@@ -1,0 +1,97 @@
+name: "Deploy 02 - Workload Spokes"
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Target environment to deploy"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+          - all
+      action:
+        description: "Terraform action to perform"
+        required: true
+        default: "plan"
+        type: choice
+        options:
+          - plan
+          - apply
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  matrix-prep:
+    name: "Prepare Deployment Matrix"
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.set-envs.outputs.environments }}
+    steps:
+      - id: set-envs
+        run: |
+          if [ "${{ inputs.target_env }}" = "all" ]; then
+            echo 'environments=["dev", "test", "prod"]' >> $GITHUB_OUTPUT
+          else
+            echo 'environments=["${{ inputs.target_env }}"]' >> $GITHUB_OUTPUT
+          fi
+
+  spokes:
+    name: "Deploy Spoke"
+    needs: matrix-prep
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        env: ${{ fromJson(needs.matrix-prep.outputs.environments) }}
+
+    environment: production
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Terraform Init
+        working-directory: layers/02-spokes
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: layers/02-spokes
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: terraform plan -var-file="environments/${{ matrix.env }}.tfvars" -out="tfplan-${{ matrix.env }}"
+
+      - name: Terraform Apply
+        if: ${{ inputs.action == 'apply' }}
+        working-directory: layers/02-spokes
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: terraform apply -auto-approve "tfplan-${{ matrix.env }}"

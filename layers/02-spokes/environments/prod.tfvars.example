@@ -1,0 +1,26 @@
+environment         = "prod"
+location            = "eastus"
+resource_group_name = "rg-spoke-prod-01"
+vnet_name           = "vnet-spoke-prod-01"
+vnet_address_space  = ["10.3.0.0/16"]
+
+web_subnet_cidr  = "10.3.1.0/24"
+app_subnet_cidr  = "10.3.2.0/24"
+data_subnet_cidr = "10.3.3.0/24"
+pe_subnet_cidr   = "10.3.4.0/24"
+
+hub_vnet_id             = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-hub-prod-01/providers/Microsoft.Network/virtualNetworks/vnet-hub-prod-01"
+hub_vnet_name           = "vnet-hub-prod-01"
+hub_resource_group_name = "rg-hub-prod-01"
+hub_firewall_private_ip = "10.0.3.4"
+
+enable_peering      = true
+use_remote_gateways = false
+enable_test_vm      = false
+
+tags = {
+  Environment = "PROD"
+  CostCenter  = "Prod-Workloads-001"
+  Owner       = "Production-Ops-Team"
+  Project     = "Enterprise-ALZ"
+}
