@@ -1,13 +1,3 @@
-terraform {
-  required_version = ">= 1.5.0"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = ">= 3.75.0"
-    }
-  }
-}
-
 # 1. Public IP for Azure Firewall
 resource "azurerm_public_ip" "fw_pip" {
   name                = "${var.name}-pip"
@@ -15,13 +5,7 @@ resource "azurerm_public_ip" "fw_pip" {
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
   sku                 = "Standard"
-
-  tags = merge(
-    {
-      IaC_Managed = "Terraform"
-    },
-    var.tags
-  )
+  tags                = var.tags
 }
 
 # 2. Management Public IP (Required if SKU tier is Basic)
@@ -32,13 +16,7 @@ resource "azurerm_public_ip" "fw_mgmt_pip" {
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
   sku                 = "Standard"
-
-  tags = merge(
-    {
-      IaC_Managed = "Terraform"
-    },
-    var.tags
-  )
+  tags                = var.tags
 }
 
 # 3. Azure Firewall Policy
@@ -52,12 +30,7 @@ resource "azurerm_firewall_policy" "fw_policy" {
     proxy_enabled = var.enable_dns_proxy
   }
 
-  tags = merge(
-    {
-      IaC_Managed = "Terraform"
-    },
-    var.tags
-  )
+  tags = var.tags
 }
 
 # 4. Default Rule Collection Group (Baseline Egress: DNS, NTP, Web Outbound)
@@ -142,10 +115,5 @@ resource "azurerm_firewall" "fw" {
     }
   }
 
-  tags = merge(
-    {
-      IaC_Managed = "Terraform"
-    },
-    var.tags
-  )
+  tags = var.tags
 }

@@ -22,7 +22,7 @@ resource "azurerm_network_security_rule" "rules" {
 
 #### Why This Matters:
 1. **Zero Index Shuffling:** In list-based inline rules, inserting a new rule at priority 150 shifts all subsequent indices, causing Terraform to destroy and recreate rules. Keying by name ensures Terraform updates only the specific rule changed.
-2. **Support for Port and CIDR Plurality:** The module uses `lookup()` to safely handle either singular (`source_port_range`) or plural (`source_port_ranges`) fields without schema errors.
+2. **Typed Optional Attributes:** The module defines rules using native `optional(...)` object attributes, enabling direct property access without fragile `lookup()` fallbacks.
 
 ---
 

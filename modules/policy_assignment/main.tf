@@ -1,13 +1,3 @@
-terraform {
-  required_version = ">= 1.5.0"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = ">= 3.75.0"
-    }
-  }
-}
-
 # 1. Allowed Locations Policy Assignment
 resource "azurerm_management_group_policy_assignment" "allowed_locations" {
   count                = length(var.allowed_locations) > 0 ? 1 : 0
